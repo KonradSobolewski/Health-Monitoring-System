@@ -22,26 +22,24 @@ if (clientID>-1)
     [~,handleLeftKnee]=vrep.simxGetObjectHandle(clientID,'Bill_leftKneeJoint',vrep.simx_opmode_blocking);
     [~,handleRightKnee]=vrep.simxGetObjectHandle(clientID,'Bill_rightKneeJoint',vrep.simx_opmode_blocking);
     k=0;
-    v = 0.05;
-    for i=1:200
+    v = 0;
+    for i=1:1000
         k=k+1;
         if(k == size(leftLegWaypoints,2))
             k = 1;
         end
-           
         leftLeg = leftLegWaypoints(k);
         rightLeg = rightLegWaypoints(k); 
         leftKnee = leftKneeWaypoints(k);
         rightKnee = rightKneeWaypoints(k);
         [~ , position] = vrep.simxGetObjectPosition(clientID,Bill,-1,vrep.simx_opmode_blocking);
         [~ , angles] = vrep.simxGetObjectOrientation(clientID,Bill,-1,vrep.simx_opmode_blocking);
-        angles
-        if(  position(1) > 1  )
+        if(  position(1) == 2  )
                 v = -0.05;
-                angles(3)= -3.2;  % to 180 stopni lol
-        elseif ( position(1) < -2)
+                angles(1)= - angles(1);
+        elseif ( position(1) == -2)
                 v = 0.05;
-                angles(3) = 0;
+                angles(1) = abs(angles(1));
         end
         vrep.simxSetObjectOrientation(clientID,Bill,-1,angles,vrep.simx_opmode_blocking);
         vrep.simxSetObjectPosition(clientID,Bill,-1,[position(1)+v,position(2),position(3)],vrep.simx_opmode_blocking);
