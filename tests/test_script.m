@@ -35,16 +35,15 @@ if (clientID>-1)
         rightKnee = rightKneeWaypoints(k);
         [~ , position] = vrep.simxGetObjectPosition(clientID,Bill,-1,vrep.simx_opmode_blocking);
         [~ , angles] = vrep.simxGetObjectOrientation(clientID,Bill,-1,vrep.simx_opmode_blocking);
-        angles
         if(  position(1) > 1  )
-                position(1) = position(1) - v;
+                v = -0.05;
                 angles(3)= -3.2;  % to 180 stopni lol
         elseif ( position(1) < -2)
-                position(1) = position(1) + v;
+                v = 0.05;
                 angles(3) = 0;
         end
         vrep.simxSetObjectOrientation(clientID,Bill,-1,angles,vrep.simx_opmode_blocking);
-        vrep.simxSetObjectPosition(clientID,Bill,-1,position,vrep.simx_opmode_blocking);
+        vrep.simxSetObjectPosition(clientID,Bill,-1,[position(1)+v,position(2),position(3)],vrep.simx_opmode_blocking);
         vrep.simxSetJointPosition(clientID,handleLeftLeg,leftLeg...
             ,vrep.simx_opmode_blocking);
         vrep.simxSetJointPosition(clientID,handleRightLeg,rightLeg...
@@ -54,8 +53,7 @@ if (clientID>-1)
             ,vrep.simx_opmode_blocking);
         vrep.simxSetJointPosition(clientID,handleRightKnee,rightKnee...
             ,vrep.simx_opmode_blocking);
-        
-        pause(0.001);
+
     end
     %[returnCode,Bill]=vrep.simxCallScriptFunction(clientID,'Bill#0',6,'sysCall_actuation',[],[],[],[],vrep.simx_opmode_blocking)
     pause(5)
