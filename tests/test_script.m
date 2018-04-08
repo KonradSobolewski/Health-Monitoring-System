@@ -37,14 +37,14 @@ if (clientID>-1)
         [~ , angles] = vrep.simxGetObjectOrientation(clientID,Bill,-1,vrep.simx_opmode_blocking);
         angles
         if(  position(1) > 1  )
-                v = -0.05;
+                position(1) = position(1) - v;
                 angles(3)= -3.2;  % to 180 stopni lol
         elseif ( position(1) < -2)
-                v = 0.05;
+                position(1) = position(1) + v;
                 angles(3) = 0;
         end
         vrep.simxSetObjectOrientation(clientID,Bill,-1,angles,vrep.simx_opmode_blocking);
-        vrep.simxSetObjectPosition(clientID,Bill,-1,[position(1)+v,position(2),position(3)],vrep.simx_opmode_blocking);
+        vrep.simxSetObjectPosition(clientID,Bill,-1,position,vrep.simx_opmode_blocking);
         vrep.simxSetJointPosition(clientID,handleLeftLeg,leftLeg...
             ,vrep.simx_opmode_blocking);
         vrep.simxSetJointPosition(clientID,handleRightLeg,rightLeg...
