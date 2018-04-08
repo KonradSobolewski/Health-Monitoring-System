@@ -22,7 +22,7 @@ if (clientID>-1)
     [~,handleLeftKnee]=vrep.simxGetObjectHandle(clientID,'Bill_leftKneeJoint',vrep.simx_opmode_blocking);
     [~,handleRightKnee]=vrep.simxGetObjectHandle(clientID,'Bill_rightKneeJoint',vrep.simx_opmode_blocking);
     k=0;
-    v = 0.05;
+    v = 0.1;
     for i=1:200
         k=k+1;
         if(k == size(leftLegWaypoints,2))
@@ -36,23 +36,25 @@ if (clientID>-1)
         [~ , position] = vrep.simxGetObjectPosition(clientID,Bill,-1,vrep.simx_opmode_blocking);
         [~ , angles] = vrep.simxGetObjectOrientation(clientID,Bill,-1,vrep.simx_opmode_blocking);
         if(  position(1) > 1  )
-                v = -0.05;
+                v = -0.1;
                 angles(3)= -3.2;  % to 180 stopni lol
         elseif ( position(1) < -2)
-                v = 0.05;
+                v = 0.1;
                 angles(3) = 0;
         end
-        vrep.simxSetObjectOrientation(clientID,Bill,-1,angles,vrep.simx_opmode_blocking);
-        vrep.simxSetObjectPosition(clientID,Bill,-1,[position(1)+v,position(2),position(3)],vrep.simx_opmode_blocking);
+        vrep.simxSetObjectOrientation(clientID,Bill,-1,angles,vrep.simx_opmode_oneshot);
+        vrep.simxSetObjectPosition(clientID,Bill,-1,[position(1)+v,position(2),position(3)],vrep.simx_opmode_oneshot);
         vrep.simxSetJointPosition(clientID,handleLeftLeg,leftLeg...
-            ,vrep.simx_opmode_blocking);
+            ,vrep.simx_opmode_oneshot);
         vrep.simxSetJointPosition(clientID,handleRightLeg,rightLeg...
-            ,vrep.simx_opmode_blocking);
+            ,vrep.simx_opmode_oneshot);
             
         vrep.simxSetJointPosition(clientID,handleLeftKnee,leftKnee...
-            ,vrep.simx_opmode_blocking);
+            ,vrep.simx_opmode_oneshot);
         vrep.simxSetJointPosition(clientID,handleRightKnee,rightKnee...
-            ,vrep.simx_opmode_blocking);
+            ,vrep.simx_opmode_oneshot);
+        
+        pause(0.01)
 
     end
     %[returnCode,Bill]=vrep.simxCallScriptFunction(clientID,'Bill#0',6,'sysCall_actuation',[],[],[],[],vrep.simx_opmode_blocking)
