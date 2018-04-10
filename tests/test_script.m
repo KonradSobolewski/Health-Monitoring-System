@@ -3,72 +3,56 @@ vrep.simxFinish(-1); % just in case, close all opened connections
 
 clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
 
-leftLegWaypoints=[0.237,0.228,0.175,-0.014,-0.133,-0.248,-0.323,-0.450,-0.450,...
-    -0.442,-0.407,-0.410,-0.377,-0.303,-0.178,-0.111,-0.010,0.046,0.104,0.145,0.188];
-rightLegWaypoints=[-0.442,-0.407,-0.410,-0.377,-0.303,-0.178,-0.111,-0.010,0.046,0.104,...
-    0.145,0.188,0.237,0.228,0.175,-0.014,-0.133,-0.248,-0.323,-0.450,-0.450];
-
-leftKneeWaypoints=[0.282,0.403,0.577,0.929,1.026,1.047,0.939,0.664,0.440,0.243,...
-    0.230,0.320,0.366,0.332,0.269,0.222,0.133,0.089,0.065,0.073,0.092];
-rightKneeWaypoints=[0.230,0.320,0.366,0.332,0.269,0.222,0.133,0.089,0.065,0.073,0.092,...
-    0.282,0.403,0.577,0.929,1.026,1.047,0.939,0.664,0.440,0.243];
 
 
 if (clientID>-1)
     display('Connection successful');
-    [returnCode,Bill]=vrep.simxGetObjectHandle(clientID,'Bill',vrep.simx_opmode_blocking);
-    [~,handleLeftLeg]=vrep.simxGetObjectHandle(clientID,'Bill_leftLegJoint',vrep.simx_opmode_blocking);
-    [~,handleRightLeg]=vrep.simxGetObjectHandle(clientID,'Bill_rightLegJoint',vrep.simx_opmode_blocking);
-    [~,handleLeftKnee]=vrep.simxGetObjectHandle(clientID,'Bill_leftKneeJoint',vrep.simx_opmode_blocking);
-    [~,handleRightKnee]=vrep.simxGetObjectHandle(clientID,'Bill_rightKneeJoint',vrep.simx_opmode_blocking);
-    k=0;
-    [~ , angles] = vrep.simxGetObjectOrientation(clientID,Bill,-1,vrep.simx_opmode_blocking);
-    [~ , position] = vrep.simxGetObjectPosition(clientID,Bill,-1,vrep.simx_opmode_blocking);
-    if(angles(3) < 0 && position(1) < 1)
-        v = -0.05;
+    paramedic = getRats(2,clientID,vrep);  % tworze 2 ratowników 
+    
+    joints = zeros(size(paramedic,2),4); % alokuje macierz na jointy 2x4
+    for i=1:size(paramedic,2)
+           joints(i,:) = getJoints(i,clientID,vrep); % pobieram jointy ka¿dego ratownika
     end
-    for i=1:200
-        k=k+1;
-        if(k == size(leftLegWaypoints,2))
+    k=0;
+    v = 0.05;
+    flag = 1;
+    angles = zeros(size(paramedic,2),3);
+    positions = zeros(size(paramedic,2),3);
+    while flag
+        if k ~= 21 % size of position arrays
+            k = k+1;
+        else
             k = 1;
         end
-           
-        leftLeg = leftLegWaypoints(k);
-        rightLeg = rightLegWaypoints(k); 
-        leftKnee = leftKneeWaypoints(k);
-        rightKnee = rightKneeWaypoints(k);
-        [~ , position] = vrep.simxGetObjectPosition(clientID,Bill,-1,vrep.simx_opmode_blocking);
-        [~ , angles] = vrep.simxGetObjectOrientation(clientID,Bill,-1,vrep.simx_opmode_blocking);
-        if(  position(1) > 1  )
-                v = -0.05;
-                angles(3)= -3.2;  % to 180 stopni lol
-        elseif ( position(1) < -2)
-                v = 0.05;
-                angles(3) = 0;
-        end
-        vrep.simxSetObjectOrientation(clientID,Bill,-1,angles,vrep.simx_opmode_oneshot);
-        vrep.simxSetObjectPosition(clientID,Bill,-1,[position(1)+v,position(2),position(3)],vrep.simx_opmode_oneshot);
-        vrep.simxSetJointPosition(clientID,handleLeftLeg,leftLeg...
-            ,vrep.simx_opmode_oneshot);
-        vrep.simxSetJointPosition(clientID,handleRightLeg,rightLeg...
-            ,vrep.simx_opmode_oneshot);
-            
-        vrep.simxSetJointPosition(clientID,handleLeftKnee,leftKnee...
-            ,vrep.simx_opmode_oneshot);
-        vrep.simxSetJointPosition(clientID,handleRightKnee,rightKnee...
-            ,vrep.simx_opmode_oneshot);
+        posOfJoints = getPosOfJoints(k);
         
-%         pause(0.01)
-
+        % pobieram aktualn¹ pozycje i k¹t
+        for i=1:size(paramedic,2) 
+             [~ , angle] = vrep.simxGetObjectOrientation(clientID,paramedic(i),-1,vrep.simx_opmode_blocking);
+             [~ , position] = vrep.simxGetObjectPosition(clientID,paramedic(i),-1,vrep.simx_opmode_blocking);
+             angles(i,:) = angle
+             positions(i,:) = position;
+        end
+        %zmieniam pozycje nóg
+        for i=1 : size(paramedic,2)
+             for j=1:4
+                vrep.simxSetJointPosition(clientID,joints(i,j),posOfJoints(j),vrep.simx_opmode_oneshot);
+             end
+        end
+        % idê i obracam
+        for i=1 : size(paramedic,2)
+             vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[0 0 0],vrep.simx_opmode_oneshot); % chwilowo na  0 0 0 
+             vrep.simxSetObjectPosition(clientID,paramedic(i),-1,[positions(i,1)+v,positions(i,2),positions(i,3)],vrep.simx_opmode_oneshot);
+        end
     end
-    vrep.simxSetJointPosition(clientID,handleLeftLeg,0,vrep.simx_opmode_oneshot);
-    vrep.simxSetJointPosition(clientID,handleRightLeg,0,vrep.simx_opmode_oneshot);
-    vrep.simxSetJointPosition(clientID,handleLeftKnee,0,vrep.simx_opmode_oneshot);
-    vrep.simxSetJointPosition(clientID,handleRightKnee,0,vrep.simx_opmode_oneshot);
+    %% koniec wiec pozycja stoj¹ca
+    for i=1 : size(paramedic,2)
+        for j=1:4
+            vrep.simxSetJointPosition(clientID,joints(i,j),0,vrep.simx_opmode_oneshot);
+        end
+    end
+    
     pause(2)
-    
     vrep.simxFinish(-1);
-    
 end
-
 vrep.delete();
