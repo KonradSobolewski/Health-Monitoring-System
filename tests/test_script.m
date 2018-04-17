@@ -3,16 +3,20 @@ vrep.simxFinish(-1); % just in case, close all opened connections
 
 clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
 
-
+numberOfBills = 2; % zmianiam liczbe billów
 
 if (clientID>-1)
     display('Connection successful');
-    paramedic = getRats(2,clientID,vrep);  % tworze 2 ratowników 
+    paramedic = getRats(numberOfBills,clientID,vrep);  % tworze 2 ratowników
     
+    [~,saveMe]=vrep.simxGetObjectHandle(clientID,'Poszkodowany',vrep.simx_opmode_blocking);
     joints = zeros(size(paramedic,2),4); % alokuje macierz na jointy 2x4
     for i=1:size(paramedic,2)
-           joints(i,:) = getJoints(i,clientID,vrep); % pobieram jointy ka¿dego ratownika
+        joints(i,:) = getJoints(i,clientID,vrep); % pobieram jointy ka¿dego ratownika
     end
+    
+    bills_sensor = readSensors(clientID,vrep,numberOfBills); % init czujniki
+    
     k=0;
     v = 0.05;
     flag = 1;
@@ -27,32 +31,48 @@ if (clientID>-1)
         posOfJoints = getPosOfJoints(k);
         
         % pobieram aktualn¹ pozycje i k¹t
-        for i=1:size(paramedic,2) 
-             [~ , angle] = vrep.simxGetObjectOrientation(clientID,paramedic(i),-1,vrep.simx_opmode_blocking);
-             [~ , position] = vrep.simxGetObjectPosition(clientID,paramedic(i),-1,vrep.simx_opmode_blocking);
-             angles(i,:) = angle
-             positions(i,:) = position;
+        for i=1:size(paramedic,2)
+            [~ , angle] = vrep.simxGetObjectOrientation(clientID,paramedic(i),-1,vrep.simx_opmode_blocking);
+            [~ , position] = vrep.simxGetObjectPosition(clientID,paramedic(i),-1,vrep.simx_opmode_blocking);
+            angles(i,:) = angle;
+            positions(i,:) = position;
         end
         %zmieniam pozycje nóg
         for i=1 : size(paramedic,2)
-             for j=1:4
+            for j=1:4
                 vrep.simxSetJointPosition(clientID,joints(i,j),posOfJoints(j),vrep.simx_opmode_oneshot);
-             end
+            end
         end
-        % idê i obracam
+        
+        %zczytuje wartosci z czujników i sprawdzam czy poszkodowany jest
+        %znaleziony
+        for i=1 : size(bills_sensor,2)
+            [~,detectionState,detectionPoint,detectedObject,~]= vrep.simxReadProximitySensor(clientID,bills_sensor(i),vrep.simx_opmode_streaming);
+            if(detectionState)
+                disp(norm(detectionPoint));
+                disp(detectedObject);
+                if(saveMe == detectedObject)
+                    disp('Misja zakoñczona sukcesem')
+                    flag =0;
+                end
+            end
+        end
+            
+            % idê i obracam
+            for i=1 : size(paramedic,2)
+                vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[0 0 0],vrep.simx_opmode_oneshot); % chwilowo na  0 0 0
+                vrep.simxSetObjectPosition(clientID,paramedic(i),-1,[positions(i,1)+v,positions(i,2),positions(i,3)],vrep.simx_opmode_oneshot);
+                
+            end
+        end
+        %% koniec wiec pozycja stoj¹ca
         for i=1 : size(paramedic,2)
-             vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[0 0 0],vrep.simx_opmode_oneshot); % chwilowo na  0 0 0 
-             vrep.simxSetObjectPosition(clientID,paramedic(i),-1,[positions(i,1)+v,positions(i,2),positions(i,3)],vrep.simx_opmode_oneshot);
+            for j=1:4
+                vrep.simxSetJointPosition(clientID,joints(i,j),0,vrep.simx_opmode_oneshot);
+            end
         end
+        
+        pause(2)
+        vrep.simxFinish(-1);
     end
-    %% koniec wiec pozycja stoj¹ca
-    for i=1 : size(paramedic,2)
-        for j=1:4
-            vrep.simxSetJointPosition(clientID,joints(i,j),0,vrep.simx_opmode_oneshot);
-        end
-    end
-    
-    pause(2)
-    vrep.simxFinish(-1);
-end
-vrep.delete();
+    vrep.delete();
