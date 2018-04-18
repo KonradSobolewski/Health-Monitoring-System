@@ -72,7 +72,44 @@ if (clientID>-1)
             end
         end
         
+        pause(3)
+        dx = 1;
+        dy = 1;
+        vrep.simxSetObjectPosition(clientID,paramedic(1),-1,[positions(1,1)+dx,positions(1,2)+dy,positions(1,3)],vrep.simx_opmode_oneshot);
+        orient = setOrientationFromPosition(dx,dy);
+        vrep.simxSetObjectOrientation(clientID,paramedic(1),-1,[0 0 orient],vrep.simx_opmode_oneshot);
         pause(2)
+        vrep.simxSetObjectPosition(clientID,paramedic(1),-1,[positions(1,1),positions(1,2),positions(1,3)],vrep.simx_opmode_oneshot);
+        vrep.simxSetObjectOrientation(clientID,paramedic(1),-1,[0 0 0],vrep.simx_opmode_oneshot);
+        pause(3)
+        dx = 1;
+        dy = -1;
+        vrep.simxSetObjectPosition(clientID,paramedic(1),-1,[positions(1,1)+dx,positions(1,2)+dy,positions(1,3)],vrep.simx_opmode_oneshot);
+        orient = setOrientationFromPosition(dx,dy);
+        vrep.simxSetObjectOrientation(clientID,paramedic(1),-1,[0 0 orient],vrep.simx_opmode_oneshot);
+        pause(2)
+        vrep.simxSetObjectPosition(clientID,paramedic(1),-1,[positions(1,1),positions(1,2),positions(1,3)],vrep.simx_opmode_oneshot);
+        vrep.simxSetObjectOrientation(clientID,paramedic(1),-1,[0 0 0],vrep.simx_opmode_oneshot);
+        pause(3)
+        dx = -1;
+        dy = -1;
+        vrep.simxSetObjectPosition(clientID,paramedic(1),-1,[positions(1,1)+dx,positions(1,2)+dy,positions(1,3)],vrep.simx_opmode_oneshot);
+        orient = setOrientationFromPosition(dx,dy);
+        vrep.simxSetObjectOrientation(clientID,paramedic(1),-1,[0 0 orient],vrep.simx_opmode_oneshot);
+        pause(2)
+        vrep.simxSetObjectPosition(clientID,paramedic(1),-1,[positions(1,1),positions(1,2),positions(1,3)],vrep.simx_opmode_oneshot);
+        vrep.simxSetObjectOrientation(clientID,paramedic(1),-1,[0 0 0],vrep.simx_opmode_oneshot);
+        pause(3)
+        dx = -1;
+        dy = 1;
+        vrep.simxSetObjectPosition(clientID,paramedic(1),-1,[positions(1,1)+dx,positions(1,2)+dy,positions(1,3)],vrep.simx_opmode_oneshot);
+        orient = setOrientationFromPosition(dx,dy);
+        vrep.simxSetObjectOrientation(clientID,paramedic(1),-1,[0 0 orient],vrep.simx_opmode_oneshot);
+        pause(2)
+        vrep.simxSetObjectPosition(clientID,paramedic(1),-1,[positions(1,1),positions(1,2),positions(1,3)],vrep.simx_opmode_oneshot);
+        vrep.simxSetObjectOrientation(clientID,paramedic(1),-1,[0 0 0],vrep.simx_opmode_oneshot);
+        pause(3)
+        
         vrep.simxFinish(-1);
     end
     vrep.delete();
