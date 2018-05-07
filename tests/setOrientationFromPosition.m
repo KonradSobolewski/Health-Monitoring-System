@@ -13,9 +13,9 @@ function orient = setOrientationFromPosition(dx,dy)
         end
     else
         if dx > 0
-            orient = acot(dy/dx)*3.2/pi;
+            orient = acot(dx/dy)*3.2/pi;
         else
-            orient = sign(dy)*(3.2-abs(acot(dy/dx)*3.2/pi));
+            orient = sign(dy)*(3.2-abs(acot(dx/dy)*3.2/pi));
         end
     end        
 end
