@@ -38,7 +38,8 @@ if (clientID>-1)
         dx(i) = v;
         dy(i) = -v;
     end
-
+%     dx = 0.008;
+%     dy = -0.004;
     flag = 1;
     time = 0;
     while flag
@@ -57,15 +58,15 @@ if (clientID>-1)
         for i=1 : size(bills_sensor,2)
             [~,detectionState,detectionPoint,detectedObject,~]= vrep.simxReadProximitySensor(clientID,bills_sensor(i),vrep.simx_opmode_streaming);
             if(detectionState)
-                name = strcat('Przedmiot wykryty: ',num2str(detectedObject));
-                name = strcat(name,', W odleg³oœci:  ');
-                name = strcat(name,num2str(norm(detectionPoint)));
-                name = strcat(name,',  Przez ratownika: ');
-                name = strcat(name,num2str(i));
-                disp(name)
+%                 name = strcat('Przedmiot wykryty: ',num2str(detectedObject));
+%                 name = strcat(name,', W odleg³oœci:  ');
+%                 name = strcat(name,num2str(norm(detectionPoint)));
+%                 name = strcat(name,',  Przez ratownika: ');
+%                 name = strcat(name,num2str(i));
+%                 disp(name)
                 if(saveMe == detectedObject)
-                    disp('Misja zakoñczona sukcesem')
-                    flag =0;
+%                     disp('Misja zakoñczona sukcesem')
+%                     flag =0;
                 end
             end
         end
@@ -77,21 +78,20 @@ if (clientID>-1)
 
             if positions(i,1) > xMax - abs(dx(i)) && positions(i,1) < xMax + abs(dx(i)) && dx(i)>0 
                 dx(i) = -v;
-            elseif(positions(i,1) > xMin - abs(dx(i)) && positions(i,1) < xMin + abs(dx(i)) && dx(i) < 0 )
-                dx(i) = v;
+            elseif(positions(i,1) > xMin - abs(dx(i)) && positions(i,1) < xMin + abs(dx(i)) && dx(i) == 0 && goDown(i) == 15)
+                goDown(i) = 0;
+                dx(i) = -v;
             end
             
-            if positions(i,2) > yMax - abs(dy(i)) && positions(i,2) < yMax + abs(dy(i)) && dy(i)>0 
-                dy(i) = -v;
-            elseif positions(i,2) > yMin - abs(dy(i)) && positions(i,2) < yMin + abs(dy(i)) && dy(i)<0 
-                dy(i) = v;
+            if positions(i,2) > yMax - abs(dy(i)) && positions(i,2) < yMax + abs(dxy(i)) && dy(i)>0 && dy(i) == 0
+                
             end
             
             % idê i obracam
             positions(i,1)=positions(i,1)+dx(i);
             positions(i,2)=positions(i,2)+dy(i);
             vrep.simxSetObjectPosition(clientID,paramedic(i),-1,[positions(i,1),positions(i,2),positions(i,3)],vrep.simx_opmode_oneshot);
-            orient = setOrientationFromPosition(dx(i),dy(i));
+            orient = setOrientationFromPosition(dx,dy);
             vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[0 0 orient],vrep.simx_opmode_oneshot);
         end
     end
