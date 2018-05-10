@@ -78,6 +78,7 @@ if (clientID>-1)
             
             if(dead(i) == 1)
                  vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[1.5 0 0],vrep.simx_opmode_oneshot);
+                 vrep.simxSetObjectPosition(clientID,paramedic(i),-1,positions(i,:)+[0 0 0.15],vrep.simx_opmode_oneshot);
                  continue;
             end
             
