@@ -1,3 +1,4 @@
+clc
 vrep=remApi('remoteApi'); % using the prototype file (remoteApiProto.m)
 vrep.simxFinish(-1); % just in case, close all opened connections
 
@@ -25,14 +26,17 @@ if (clientID>-1)
     positions(5,:)
     posOfJoints = getPosOfJoints(1); % init joints
     
-    temp = ones(1,8)*36.6;
-    press = ones(1,8)*130;
-    puls = ones(1,8)*75;
+    temp = ones(1,numberOfBills)*36.6;
+    press = ones(1,numberOfBills)*130;
+    puls = ones(1,numberOfBills)*75;
     
     k=0;
-    dx= zeros(1,8);
-    dy= zeros(1,8);
-    goDown = zeros(1,8);
+    dx= zeros(1,numberOfBills);
+    dy= zeros(1,numberOfBills);
+    avoid = zeros(1,numberOfBills);
+    beforAvoid = zeros(numberOfBills,2); %old dx old dy
+    avoidStart = zeros(numberOfBills,2);
+    
     xMax = 62.5;
     xMin = -17;
     yMax = 38.5;
@@ -43,12 +47,12 @@ if (clientID>-1)
         dy(i) = -v;
     end
     
-    dead = zeros(1,8);
+    dead = zeros(1,numberOfBills);
     flag = 1;
     time = 0;
     while flag      
         
-        bad = zeros(1,8);
+        bad = zeros(1,numberOfBills);
         time = time +1;
         if (mod(time,5) == 0)
             if k ~= 21 % size of position arrays
@@ -60,7 +64,7 @@ if (clientID>-1)
         end
         
         if(mod(time,1000)==0 )
-            lucky_guy = randi(8,1);
+            lucky_guy = randi(numberOfBills,1);
             if(~dead(lucky_guy))
                 temp(lucky_guy) = 36.6;
                 press(lucky_guy) = 130;
@@ -68,17 +72,20 @@ if (clientID>-1)
             end
         end
         
+        if(sum(dead) == numberOfBills)
+            flag =0;
+            disp('Mission failed')
+        end
+        
         if (mod(time,30) == 0)
-            temp = temp + rand(1,8)/4 - 0.125;  
-            press = press + rand(1,8)*2 - 1;
-            puls = puls + rand(1,8) - 0.5;
+            temp = temp + rand(1,numberOfBills)/4 - 0.125;  
+            press = press + rand(1,numberOfBills)*2 - 1;
+            puls = puls + rand(1,numberOfBills) - 0.5;
         end
           
         for i=1 : size(paramedic,2)
-            
             if(dead(i) == 1)
                  vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[1.5 0 0],vrep.simx_opmode_oneshot);
-                 vrep.simxSetObjectPosition(clientID,paramedic(i),-1,positions(i,:)+[0 0 0.15],vrep.simx_opmode_oneshot);
                  continue;
             end
             
@@ -102,36 +109,53 @@ if (clientID>-1)
             for j=1:4 %zmieniam pozycje nóg
                 vrep.simxSetJointPosition(clientID,joints(i,j),posOfJoints(j),vrep.simx_opmode_streaming);
             end
-            
-            if positions(i,1) > xMax - abs(dx(i)) && positions(i,1) < xMax + abs(dx(i)) && dx(i)>0 
-                dx(i) = -v;
-            elseif(positions(i,1) > xMin - abs(dx(i)) && positions(i,1) < xMin + abs(dx(i)) && dx(i) < 0 )
-                dx(i) = v;
-            end
-            
-            if positions(i,2) > yMax - abs(dy(i)) && positions(i,2) < yMax + abs(dy(i)) && dy(i)>0 
-                dy(i) = -v;
-            elseif positions(i,2) > yMin - abs(dy(i)) && positions(i,2) < yMin + abs(dy(i)) && dy(i)<0 
-                dy(i) = v;
-            end
-            
+                        
             %zczytuje wartosci z czujników i sprawdzam czy poszkodowany jest
             %znaleziony
             [~,detectionState,detectionPoint,detectedObject,~]= vrep.simxReadProximitySensor(clientID,bills_sensor(i),vrep.simx_opmode_streaming);
             if(detectionState)
-                name = strcat('Przedmiot wykryty: ',num2str(detectedObject));
-                name = strcat(name,', W odleg³oœci:  ');
-                name = strcat(name,num2str(norm(detectionPoint)));
-                name = strcat(name,',  Przez ratownika: ');
-                name = strcat(name,num2str(i));
-                disp(name)          
+%                 name = strcat('Przedmiot wykryty: ',num2str(detectedObject));
+%                 name = strcat(name,', W odleg³oœci:  ');
+%                 name = strcat(name,num2str(norm(detectionPoint)));
+%                 name = strcat(name,',  Przez ratownika: ');
+%                 name = strcat(name,num2str(i));
+%                 disp(name) 
+                if( detectionPoint(1) < 0.5 && detectionPoint(1) > 0 && detectionPoint(3) < 1.5 && avoid(i)==0) % skrêt w prawo
+                    avoid(i) = 2;
+                    beforAvoid(i,1) = dx(i);
+                    beforAvoid(i,2) = dy(i);
+                    avoidStart(i) = time;
+                elseif ( detectionPoint(1) > -0.5 && detectionPoint(1) < 0 && detectionPoint(3) < 1.5 && avoid(i)==0) % skrêt w lewo
+                    avoid(i) = 1;
+                    beforAvoid(i,1) = dx(i);
+                    beforAvoid(i,2) = dy(i);
+                    avoidStart(i) = time;
+                end
                 if(saveMe == detectedObject)
                     disp('Misja zakoñczona sukcesem')
                     flag =0;
                 end
             end
             
-            % idê i obracam
+            %predykcja nastêpnego po³o¿enia
+            if avoid(i) == 0
+                if positions(i,1) > xMax - abs(dx(i)) && positions(i,1) < xMax + abs(dx(i)) && dx(i)>0 
+                    dx(i) = -v;
+                elseif(positions(i,1) > xMin - abs(dx(i)) && positions(i,1) < xMin + abs(dx(i)) && dx(i) < 0 )
+                    dx(i) = v;
+                end
+
+                if positions(i,2) > yMax - abs(dy(i)) && positions(i,2) < yMax + abs(dy(i)) && dy(i)>0 
+                    dy(i) = -v;
+                elseif positions(i,2) > yMin - abs(dy(i)) && positions(i,2) < yMin + abs(dy(i)) && dy(i)<0 
+                    dy(i) = v;
+                end
+            else    
+                [dx(i),dy(i),avoid(i)] = avoiding(beforAvoid(i,1),beforAvoid(i,2),avoidStart(i),time,avoid(i));
+            end
+
+            
+%             idê i obracam
             positions(i,1)=positions(i,1)+dx(i);
             positions(i,2)=positions(i,2)+dy(i);
             vrep.simxSetObjectPosition(clientID,paramedic(i),-1,[positions(i,1),positions(i,2),positions(i,3)],vrep.simx_opmode_oneshot);
