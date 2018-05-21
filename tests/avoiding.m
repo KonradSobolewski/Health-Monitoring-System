@@ -12,10 +12,10 @@ function [ dx,dy,avoid] = avoiding( dxStart,dyStart,timeStart,time,avoid )
             orient = setOrientationFromPosition(dxStart,dyStart);
             [dx,dy] = setPositionFromOrientation(orient+0.8,sqrt(dxStart^2 + dyStart^2));
         end
-    elseif (time -timeStart  >= 150 && time -timeStart < 300)
+    elseif (time -timeStart  >= 150 && time -timeStart < 250)
         dx = dxStart;
         dy = dyStart;
-    elseif (time -timeStart >= 300 && time -timeStart  < 450)
+    elseif (time -timeStart >= 250 && time -timeStart  < 400)
         if avoid == 1
             orient = setOrientationFromPosition(dxStart,dyStart);
             [dx,dy] = setPositionFromOrientation(orient+0.8,sqrt(dxStart^2 + dyStart^2));
@@ -23,7 +23,7 @@ function [ dx,dy,avoid] = avoiding( dxStart,dyStart,timeStart,time,avoid )
             orient = setOrientationFromPosition(dxStart,dyStart);
             [dx,dy] = setPositionFromOrientation(orient-0.8,sqrt(dxStart^2 + dyStart^2));
         end
-    elseif (time -timeStart  >= 450 )
+    elseif (time -timeStart  >= 400 )
         dx = dxStart;
         dy = dyStart;
         avoid = 0;

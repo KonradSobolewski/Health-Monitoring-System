@@ -8,7 +8,7 @@ numberOfBills = 8; % zmianiam liczbe billów
 
 if (clientID>-1)
     display('Connection successful');
-    paramedic = getRats(numberOfBills,clientID,vrep);  % tworze 2 ratowników
+    paramedic = getRats(numberOfBills,clientID,vrep);  % tworze 8 ratowników
     
     [~,saveMe]=vrep.simxGetObjectHandle(clientID,'Poszkodowany',vrep.simx_opmode_blocking);
     joints = zeros(size(paramedic,2),4); % alokuje macierz na jointy 2x4
@@ -37,6 +37,10 @@ if (clientID>-1)
     beforAvoid = zeros(numberOfBills,2); %old dx old dy
     avoidStart = zeros(numberOfBills,2);
     
+    signals = zeros(numberOfBills,numberOfBills); % % od kogo do kogo
+    signalSpeed = 0.1;
+    r = zeros(1,numberOfBills);
+    
     xMax = 62.5;
     xMin = -17;
     yMax = 38.5;
@@ -48,10 +52,13 @@ if (clientID>-1)
     end
     
     dead = zeros(1,numberOfBills);
+    stay = zeros(1,numberOfBills);
     flag = 1;
     time = 0;
+    inRange = zeros(1,numberOfBills);
+    savers = zeros(1,numberOfBills); %kto kogo ratuje
+   
     while flag      
-        
         bad = zeros(1,numberOfBills);
         time = time +1;
         if (mod(time,5) == 0)
@@ -72,7 +79,7 @@ if (clientID>-1)
             end
         end
         
-        if(sum(dead) == numberOfBills)
+        if(sum(dead) == numberOfBills-1)
             flag =0;
             disp('Mission failed')
         end
@@ -83,10 +90,25 @@ if (clientID>-1)
             puls = puls + rand(1,numberOfBills) - 0.5;
         end
           
-        for i=1 : size(paramedic,2)
+        for i=1 : numberOfBills            
             if(dead(i) == 1)
-                 vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[1.5 0 0],vrep.simx_opmode_oneshot);
-                 continue;
+                vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[1.5 0 0],vrep.simx_opmode_oneshot);
+                r(i) = r(i) + signalSpeed;
+                d = sqrt((positions(1,1) - positions(i,1))^2 + (positions(1,2) - positions(i,2))^2);
+                if( d < r(i) && inRange(i) == 0 )
+                    inRange(i) = 1;
+                    pause(3);
+                    savers = [0 0 0 i i 0 0 0];  %%  TODO
+                end
+                continue;
+            end
+            
+            if(stay(i) == 1 )
+               continue;
+            else
+               for j=1:4 %zmieniam pozycje nóg
+                    vrep.simxSetJointPosition(clientID,joints(i,j),posOfJoints(j),vrep.simx_opmode_streaming);
+               end
             end
             
             if( temp(i) < 35 || temp(i) > 39)
@@ -101,17 +123,12 @@ if (clientID>-1)
                bad(i) = bad(i) + 1; 
             end
             
-            if( bad(i) >= 2 )
+            if( bad(i) >= 2 && i~=1 ) 
                dead(i) = 1; 
-            end
-
-
-            for j=1:4 %zmieniam pozycje nóg
-                vrep.simxSetJointPosition(clientID,joints(i,j),posOfJoints(j),vrep.simx_opmode_streaming);
             end
                         
             %zczytuje wartosci z czujników i sprawdzam czy poszkodowany jest
-            %znaleziony
+            %znaleziony , decycja jak omijam
             [~,detectionState,detectionPoint,detectedObject,~]= vrep.simxReadProximitySensor(clientID,bills_sensor(i),vrep.simx_opmode_streaming);
             if(detectionState)
 %                 name = strcat('Przedmiot wykryty: ',num2str(detectedObject));
@@ -121,12 +138,12 @@ if (clientID>-1)
 %                 name = strcat(name,num2str(i));
 %                 disp(name) 
                 if( detectionPoint(1) < 0.5 && detectionPoint(1) > 0 && detectionPoint(3) < 1.5 && avoid(i)==0) % skrêt w prawo
-                    avoid(i) = 2;
+                    avoid(i) = 1;
                     beforAvoid(i,1) = dx(i);
                     beforAvoid(i,2) = dy(i);
                     avoidStart(i) = time;
                 elseif ( detectionPoint(1) > -0.5 && detectionPoint(1) < 0 && detectionPoint(3) < 1.5 && avoid(i)==0) % skrêt w lewo
-                    avoid(i) = 1;
+                    avoid(i) = 2;
                     beforAvoid(i,1) = dx(i);
                     beforAvoid(i,2) = dy(i);
                     avoidStart(i) = time;
@@ -136,24 +153,33 @@ if (clientID>-1)
                     flag =0;
                 end
             end
-            
-            %predykcja nastêpnego po³o¿enia
-            if avoid(i) == 0
-                if positions(i,1) > xMax - abs(dx(i)) && positions(i,1) < xMax + abs(dx(i)) && dx(i)>0 
-                    dx(i) = -v;
-                elseif(positions(i,1) > xMin - abs(dx(i)) && positions(i,1) < xMin + abs(dx(i)) && dx(i) < 0 )
-                    dx(i) = v;
+            % chodzenie w kierunku ratownika chorego
+            if( savers(i) ~= 0 )
+                if( abs(positions(i,1) - positions(savers(i),1)) < 1 && abs(positions(i,2) - positions(savers(i),2)) < 1)
+                    stay(i) = 1;
                 end
+                orient2 = setOrientationFromPosition(positions(savers(i),1) - positions(i,1), positions(savers(i),2)- positions(i,2));
+                [dx(i),dy(i)] = setPositionFromOrientation(orient2,sqrt((v^2)*2));
+            end
+            
+            %predykcja nastêpnego po³o¿enia w normalnym przypadku
+            if avoid(i) == 0
+                if(savers(i) == 0 )
+                    if positions(i,1) > xMax - abs(dx(i)) && positions(i,1) < xMax + abs(dx(i)) && dx(i)>0 
+                        dx(i) = -v;
+                    elseif(positions(i,1) > xMin - abs(dx(i)) && positions(i,1) < xMin + abs(dx(i)) && dx(i) < 0 )
+                        dx(i) = v;
+                    end
 
-                if positions(i,2) > yMax - abs(dy(i)) && positions(i,2) < yMax + abs(dy(i)) && dy(i)>0 
-                    dy(i) = -v;
-                elseif positions(i,2) > yMin - abs(dy(i)) && positions(i,2) < yMin + abs(dy(i)) && dy(i)<0 
-                    dy(i) = v;
+                    if positions(i,2) > yMax - abs(dy(i)) && positions(i,2) < yMax + abs(dy(i)) && dy(i)>0 
+                        dy(i) = -v;
+                    elseif positions(i,2) > yMin - abs(dy(i)) && positions(i,2) < yMin + abs(dy(i)) && dy(i)<0 
+                        dy(i) = v;
+                    end
                 end
             else    
                 [dx(i),dy(i),avoid(i)] = avoiding(beforAvoid(i,1),beforAvoid(i,2),avoidStart(i),time,avoid(i));
             end
-
             
 %             idê i obracam
             positions(i,1)=positions(i,1)+dx(i);
