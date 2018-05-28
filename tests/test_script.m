@@ -3,7 +3,7 @@ vrep=remApi('remoteApi'); % using the prototype file (remoteApiProto.m)
 vrep.simxFinish(-1); % just in case, close all opened connections
 
 clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
-
+wayOfWalking = 1;  % 1 promieniscie 2 równolegle
 numberOfBills = 8; % zmianiam liczbe billów
 
 if (clientID>-1)
@@ -47,8 +47,12 @@ if (clientID>-1)
     yMin = - 40;
     v = 0.008;
     for i=1:numberOfBills
-        dx(i) = v;
-        dy(i) = -v;
+        if wayOfWalking == 1
+            [dx(i),dy(i)] = setPositionFromOrientation(0.3 - 0.2*i,sqrt((v^2)*2));
+        else
+            dx(i) = v;
+            dy(i) = -v;
+        end
     end
     
     dead = zeros(1,numberOfBills);
