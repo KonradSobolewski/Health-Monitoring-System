@@ -123,8 +123,13 @@ if (clientID>-1)
                bad(i) = bad(i) + 1; 
             end
             
-            if( bad(i) >= 2 && i~=1 ) 
+            if( bad(i) >= 2 && i~=1 && sum(dead)<3) 
                dead(i) = 1; 
+            end
+            if( bad(i) >= 2 && i~=1 && sum(dead)>=3) 
+               temp(lucky_guy) = 36.6;
+               press(lucky_guy) = 130;
+               puls(lucky_guy) = 75;
             end
                         
             %zczytuje wartosci z czujników i sprawdzam czy poszkodowany jest
