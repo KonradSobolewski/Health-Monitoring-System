@@ -9,6 +9,8 @@ numberOfBills = 8; % zmianiam liczbe billów
 if (clientID>-1)
     display('Connection successful');
     paramedic = getRats(numberOfBills,clientID,vrep);  % tworze 8 ratowników
+    hierarchy = randperm(length(paramedic));
+    leader = find(hierarchy==1);
     
     [~,saveMe]=vrep.simxGetObjectHandle(clientID,'Poszkodowany',vrep.simx_opmode_blocking);
     joints = zeros(size(paramedic,2),4); % alokuje macierz na jointy 2x4
@@ -128,7 +130,11 @@ if (clientID>-1)
             end
             
             if( bad(i) >= 2 && i~=1 && sum(dead)<3) 
-               dead(i) = 1; 
+               dead(i) = 1;
+               if i==leader
+                   hierarchy = hierarchy-1;
+                   leader = find(hierarchy==1);
+               end
             end
             if( bad(i) >= 2 && i~=1 && sum(dead)>=3) 
                temp(i) = 36.6;
