@@ -1,8 +1,9 @@
-function sossignal = sosSignalGenerator(T,puls,bp,prev_puls,prev_bp)
+function sossignal = sosSignalGenerator(T,puls,sys_bp,dias_bp,prev_puls,prev_sys_bp,prev_dias_bp)
 %SOSSIGNALGENERATOR Summary of this function goes here
 %   Detailed explanation goes here
     delta_t = abs(puls - prev_puls(1));
-    delta_bp = abs(bp - prev_bp(1,:));
+    delta_sys_bp = abs(sys_bp - prev_sys_bp(1,:));
+    delta_dias_bp = abs(dias_bp - prev_dias_bp(1,:));
     counter = 0;
     
     if (T >= 34.5 && T < 35.5) || (T > 37.5 && T <= 38.5)
@@ -17,21 +18,15 @@ function sossignal = sosSignalGenerator(T,puls,bp,prev_puls,prev_bp)
         counter = counter+2;
     end
     
-    if (t >= 40 && t < 50) || (t > 90 && t <= 120) || (delta_t > 20 && delta_t < 40)
+    if (sys_bp >= 90 && sys_bp < 100) || (sys_bp > 130 && sys_bp <= 160) || (delta_sys_bp > 20 && delta_sys_bp < 30)
         counter = counter+1;
-    elseif t < 40 || t > 120 || delta_t >= 40
+    elseif sys_bp < 90 || sys_bp > 160 || delta_sys_bp >= 30
         counter = counter+2;
     end
     
-    if (bp(1) >= 90 && bp(1) < 100) || (bp(1) > 130 && bp(1) <= 160) || (delta_bp(1) > 20 && delta_bp(1) < 30)
+    if (dias_bp >= 50 && dias_bp < 70) || (dias_bp > 90 && dias_bp <= 120) || (delta_dias_bp > 10 && delta_dias_bp < 15)
         counter = counter+1;
-    elseif bp(1) < 90 || bp(1) > 160 || delta_bp(1) >= 30
-        counter = counter+2;
-    end
-    
-    if (bp(2) >= 50 && bp(2) < 70) || (bp(2) > 90 && bp(2) <= 120) || (delta_bp(2) > 10 && delta_bp(2) < 15)
-        counter = counter+1;
-    elseif bp(2) < 50 || bp(2) > 120 || delta_bp(2) >= 15
+    elseif dias_bp < 50 || dias_bp > 120 || delta_dias_bp >= 15
         counter = counter+2;
     end
 
