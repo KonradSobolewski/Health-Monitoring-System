@@ -3,12 +3,14 @@ vrep=remApi('remoteApi'); % using the prototype file (remoteApiProto.m)
 vrep.simxFinish(-1); % just in case, close all opened connections
 
 clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
-
+wayOfWalking = 1;  % 1 promieniscie 2 równolegle
 numberOfBills = 8; % zmianiam liczbe billów
 
 if (clientID>-1)
     display('Connection successful');
     paramedic = getRats(numberOfBills,clientID,vrep);  % tworze 8 ratowników
+    hierarchy = randperm(length(paramedic));
+    leader = find(hierarchy==1);
     
     [~,saveMe]=vrep.simxGetObjectHandle(clientID,'Poszkodowany',vrep.simx_opmode_blocking);
     joints = zeros(size(paramedic,2),4); % alokuje macierz na jointy 2x4
@@ -47,8 +49,12 @@ if (clientID>-1)
     yMin = - 40;
     v = 0.008;
     for i=1:numberOfBills
-        dx(i) = v;
-        dy(i) = -v;
+        if wayOfWalking == 1
+            [dx(i),dy(i)] = setPositionFromOrientation(0.1 - 0.2*i,sqrt((v^2)*2));
+        else
+            dx(i) = v;
+            dy(i) = -v;
+        end
     end
     
     dead = zeros(1,numberOfBills);
@@ -57,7 +63,8 @@ if (clientID>-1)
     time = 0;
     inRange = zeros(1,numberOfBills);
     savers = zeros(1,numberOfBills); %kto kogo ratuje
-   
+ 
+ % pêtla while - pêtla w³aœciwa symulacji
     while flag      
         bad = zeros(1,numberOfBills);
         time = time +1;
@@ -70,6 +77,7 @@ if (clientID>-1)
             posOfJoints = getPosOfJoints(k);
         end
         
+        % raz na 1000 iteracji jeden losowy ratownik cudownie zdrowieje
         if(mod(time,1000)==0 )
             lucky_guy = randi(numberOfBills,1);
             if(~dead(lucky_guy))
@@ -79,26 +87,31 @@ if (clientID>-1)
             end
         end
         
+        % to w³aœciwie mo¿na wywaliæ, bo zak³adamy, ¿e maks dwóch potrzebuje pomocy
         if(sum(dead) == numberOfBills-1)
             flag =0;
             disp('Mission failed')
         end
         
+        % losowe zmienianie wartoœci odczytów ratowników
         if (mod(time,30) == 0)
             temp = temp + rand(1,numberOfBills)/4 - 0.125;  
             press = press + rand(1,numberOfBills)*2 - 1;
             puls = puls + rand(1,numberOfBills) - 0.5;
         end
-          
-        for i=1 : numberOfBills            
+        
+        % w tej pêtli for iterujemy po wszystkich ratownikach
+        for i=1 : numberOfBills 
+            % jeœli dany ratownik jest kwalifikuje siê do wys³ania sygna³u SOS to k³adziemy go
             if(dead(i) == 1)
                 vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[1.5 0 0],vrep.simx_opmode_oneshot);
+                % wyslanie sygna³u sos
                 r(i) = r(i) + signalSpeed;
                 d = sqrt((positions(1,1) - positions(i,1))^2 + (positions(1,2) - positions(i,2))^2);
                 if( d < r(i) && inRange(i) == 0 )
                     inRange(i) = 1;
                     pause(3);
-                    savers = [0 0 0 i i 0 0 0];  %%  TODO
+                    savers = [0 0 0 i i 0 0 0];  %%  tutaj powinni byæ okreœlani ratownicy, którzy szukaj¹ kolegi
                 end
                 continue;
             end
@@ -111,6 +124,7 @@ if (clientID>-1)
                end
             end
             
+            % tutaj zaczyna siê sprawdzanie odczytów i determinowanie czy wys³aæ sygna³ sos
             if( temp(i) < 35 || temp(i) > 39)
                 bad(i) = bad(i) + 1;                
             end
@@ -123,12 +137,21 @@ if (clientID>-1)
                bad(i) = bad(i) + 1; 
             end
             
-            if( bad(i) >= 2 && i~=1 ) 
-               dead(i) = 1; 
+            if( bad(i) >= 2 && i~=1 && sum(dead)<3) 
+               dead(i) = 1;
+               if i==leader
+                   hierarchy = hierarchy-1;
+                   leader = find(hierarchy==1);
+               end
             end
+            if( bad(i) >= 2 && i~=1 && sum(dead)>=3) 
+               temp(i) = 36.6;
+               press(i) = 130;
+               puls(i) = 75;
+            end
+            % a tu koñczy 
                         
-            %zczytuje wartosci z czujników i sprawdzam czy poszkodowany jest
-            %znaleziony , decycja jak omijam
+            %sczytuje wartosci z czujników i sprawdzam czy poszkodowany jest znaleziony , decycja jak omijam
             [~,detectionState,detectionPoint,detectedObject,~]= vrep.simxReadProximitySensor(clientID,bills_sensor(i),vrep.simx_opmode_streaming);
             if(detectionState)
 %                 name = strcat('Przedmiot wykryty: ',num2str(detectedObject));
