@@ -134,7 +134,7 @@ if (clientID>-1)
             end
             
             % tutaj zaczyna siê sprawdzanie odczytów i determinowanie czy wys³aæ sygna³ sos
-            bad(i) = sosSignalGenerator(temp,puls,sys_press,dias_press,prev_puls,prev_sys_press,prev_dias_press);
+            bad(i) = sosSignalGenerator(temp(i),puls(i),sys_press(i),dias_press(:,i),prev_puls(:,i),prev_sys_press(:,i),prev_dias_press(:,i));
             
             if( bad(i) >= 2 && i~=1 && sum(dead)<3) 
                dead(i) = 1;

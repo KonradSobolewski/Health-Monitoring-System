@@ -1,7 +1,7 @@
 function sossignal = sosSignalGenerator(T,puls,sys_bp,dias_bp,prev_puls,prev_sys_bp,prev_dias_bp)
 %SOSSIGNALGENERATOR Summary of this function goes here
 %   Detailed explanation goes here
-    delta_t = abs(puls - prev_puls(1));
+    delta_puls = abs(puls - prev_puls(1));
     delta_sys_bp = abs(sys_bp - prev_sys_bp(1,:));
     delta_dias_bp = abs(dias_bp - prev_dias_bp(1,:));
     counter = 0;
@@ -12,9 +12,9 @@ function sossignal = sosSignalGenerator(T,puls,sys_bp,dias_bp,prev_puls,prev_sys
         counter = counter+2;
     end
     
-    if (t >= 40 && t < 50) || (t > 90 && t <= 120) || (delta_t > 20 && delta_t < 40)
+    if (puls >= 40 && puls < 50) || (puls > 90 && puls <= 120) || (delta_puls > 20 && delta_puls < 40)
         counter = counter+1;
-    elseif t < 40 || t > 120 || delta_t >= 40
+    elseif puls < 40 || puls > 120 || delta_puls >= 40
         counter = counter+2;
     end
     
