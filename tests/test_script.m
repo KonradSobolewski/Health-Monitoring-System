@@ -66,7 +66,7 @@ if (clientID>-1)
     flag = 1;
     time = 0;
     inRange = zeros(1,numberOfBills);
-    savers = zeros(1,numberOfBills); %kto kogo ratuje
+    saviors = zeros(1,numberOfBills); %kto kogo ratuje
  
  % pêtla while - pêtla w³aœciwa symulacji
     while flag      
@@ -120,7 +120,7 @@ if (clientID>-1)
                 if( d < r(i) && inRange(i) == 0 )
                     inRange(i) = 1;
                     pause(3);
-                    savers = [0 0 0 i i 0 0 0];  %%  tutaj powinni byæ okreœlani ratownicy, którzy szukaj¹ kolegi
+                    saviors = [0 0 0 i i 0 0 0];  %%  tutaj powinni byæ okreœlani ratownicy, którzy szukaj¹ kolegi
                 end
                 continue;
             end
@@ -177,17 +177,17 @@ if (clientID>-1)
                 end
             end
             % chodzenie w kierunku ratownika chorego
-            if( savers(i) ~= 0 )
-                if( abs(positions(i,1) - positions(savers(i),1)) < 1 && abs(positions(i,2) - positions(savers(i),2)) < 1)
+            if( saviors(i) ~= 0 )
+                if( abs(positions(i,1) - positions(saviors(i),1)) < 1 && abs(positions(i,2) - positions(saviors(i),2)) < 1)
                     stay(i) = 1;
                 end
-                orient2 = setOrientationFromPosition(positions(savers(i),1) - positions(i,1), positions(savers(i),2)- positions(i,2));
+                orient2 = setOrientationFromPosition(positions(saviors(i),1) - positions(i,1), positions(saviors(i),2)- positions(i,2));
                 [dx(i),dy(i)] = setPositionFromOrientation(orient2,sqrt((v^2)*2));
             end
             
             %predykcja nastêpnego po³o¿enia w normalnym przypadku
             if avoid(i) == 0
-                if(savers(i) == 0 )
+                if(saviors(i) == 0 )
                     if positions(i,1) > xMax - abs(dx(i)) && positions(i,1) < xMax + abs(dx(i)) && dx(i)>0 
                         dx(i) = -v;
                     elseif(positions(i,1) > xMin - abs(dx(i)) && positions(i,1) < xMin + abs(dx(i)) && dx(i) < 0 )

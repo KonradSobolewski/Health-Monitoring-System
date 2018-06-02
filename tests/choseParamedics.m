@@ -1,11 +1,28 @@
-function [savers] = choseParamedics(savers,positions,inneed)
+function [saviors] = choseParamedics(positions,inneed,dead)
 
-indices = find(savers==1); 
-saver1 = indices(1);
-saver2 = indices(2);
+numOfParamedics = length(positions);
+optionsMatrix = ones(numOfParamedics);
+optionsMatrix = triu(optionsMatrix,1);
+optionsMatrix = optionsMatrix - diag(diag(optionsMatrix));
 
-d1 = sqrt((positions(1,1) - positions(i,1))^2 + (positions(1,2) - positions(i,2))^2);
-d2 = 
+notActive = find(dead==1);
+for i=1:length(notActive)
+    optionsMatrix(:,notActive(i)) = 0;
+    optionsMatrix(notActive(i),:) = 0;
+end
 
+[row,col] = find(optionsMatrix==1);
+outcomesMatrix = zeros(numOfParamedics);
 
+for  i=1:length(row)
+    savior1 = row(i);
+    savior2 = col(i);
+
+    outcomesMatrix(savior1,savior2)= J(savior1,savior2,positions,inneed,dead);
+end
+
+[bestRow,bestCol] = find(outcomesMatrix==min(outcomesMatrix(outcomesMatrix>0)));
+saviors = zeros(numOfParamedics,1);
+saviors(bestRow(1))=1;
+saviors(bestCol(1))=1;
 end
