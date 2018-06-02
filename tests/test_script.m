@@ -29,8 +29,12 @@ if (clientID>-1)
     posOfJoints = getPosOfJoints(1); % init joints
     
     temp = ones(1,numberOfBills)*36.6;
-    press = ones(1,numberOfBills)*130;
+    sys_press = ones(1,numberOfBills)*120;
+    dias_press = ones(1,numberOfBills)*80;
     puls = ones(1,numberOfBills)*75;
+    prev_sys_press = ones(6000,numberOfBills)*120;
+    prev_dias_press = ones(6000,numberOfBills)*80;
+    prev_puls = ones(6000,numberOfBills)*75;
     
     k=0;
     dx= zeros(1,numberOfBills);
@@ -82,7 +86,8 @@ if (clientID>-1)
             lucky_guy = randi(numberOfBills,1);
             if(~dead(lucky_guy))
                 temp(lucky_guy) = 36.6;
-                press(lucky_guy) = 130;
+                sys_press(lucky_guy) = 120;
+                dias_press(lucky_guy) = 80;
                 puls(lucky_guy) = 75;
             end
         end
@@ -95,9 +100,13 @@ if (clientID>-1)
         
         % losowe zmienianie wartoœci odczytów ratowników
         if (mod(time,30) == 0)
-            temp = temp + rand(1,numberOfBills)/4 - 0.125;  
-            press = press + rand(1,numberOfBills)*2 - 1;
+            temp = temp + rand(1,numberOfBills)/4 - 0.125;
+            sys_press = sys_press + rand(1,numberOfBills)*2 - 1;
+            prev_sys_press = [sys_press;prev_sys_press(1:(end-1),:)];
+            dias_press = dias_press + rand(1,numberOfBills)*1.3 - 0.6;
+            prev_dias_press = [dias_press;prev_dias_press(1:(end-1),:)];
             puls = puls + rand(1,numberOfBills) - 0.5;
+            prev_puls = [puls;prev_puls(1:(end-1),:)];
         end
         
         % w tej pêtli for iterujemy po wszystkich ratownikach
@@ -125,17 +134,7 @@ if (clientID>-1)
             end
             
             % tutaj zaczyna siê sprawdzanie odczytów i determinowanie czy wys³aæ sygna³ sos
-            if( temp(i) < 35 || temp(i) > 39)
-                bad(i) = bad(i) + 1;                
-            end
-            
-            if( press(i) < 85 || press(i) > 180 )
-               bad(i) = bad(i) + 1; 
-            end
-            
-            if( puls(i) < 35 || press(i) > 130 )
-               bad(i) = bad(i) + 1; 
-            end
+            bad(i) = sosSignalGenerator(temp(i),puls(i),sys_press(i),dias_press(:,i),prev_puls(:,i),prev_sys_press(:,i),prev_dias_press(:,i));
             
             if( bad(i) >= 2 && i~=1 && sum(dead)<3) 
                dead(i) = 1;
@@ -146,7 +145,8 @@ if (clientID>-1)
             end
             if( bad(i) >= 2 && i~=1 && sum(dead)>=3) 
                temp(i) = 36.6;
-               press(i) = 130;
+               sys_press(i) = 120;
+               dias_press(i) = 80;
                puls(i) = 75;
             end
             % a tu koñczy 
