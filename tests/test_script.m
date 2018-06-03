@@ -142,6 +142,8 @@ if (clientID>-1)
                    hierarchy = hierarchy-1;
                    leader = find(hierarchy==1);
                end
+               name = ['Ratownik nr ',num2str(i),' wys³a³ SOS'];
+               disp(name);
             end
             if( bad(i) >= 2 && i~=1 && sum(dead)>=3) 
                temp(i) = 36.6;
