@@ -1,7 +1,7 @@
-function [outcome] = J(savior1,savior2,positions,inneed,dead)
+function [outcome] = J(savior1,savior2,positions,inneed,injured)
 
 alfa1 = 0.5;
-active = find(dead==0);
+active = find(injured==0);
 
 % maxCover = 0;
 % for i=1:length(active)
