@@ -150,7 +150,7 @@ if (clientID>-1)
                 disp(name);
                 vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[0 -pi/2 0],vrep.simx_opmode_oneshot);
                 vrep.simxSetObjectPosition(clientID,paramedic(i),-1,[positions(i,1),positions(i,2),0.1],vrep.simx_opmode_oneshot);
-            elseif( bad(i)>0 && injured(i)==0 && sum(injured)>=1)
+             elseif( bad(i)>0 && injured(i)==0 && sum(injured)>=1)
                 temp(i) = 36.6;
                 sys_press(i) = 120;
                 dias_press(i) = 80;
@@ -172,6 +172,11 @@ if (clientID>-1)
                 end
                 if (helpStatus==1 && i==leader)
                     stay(:) = 1;
+                    for l=1:numberOfBills
+                        for j=1:4
+                            vrep.simxSetJointPosition(clientID,joints(l,j),0,vrep.simx_opmode_oneshot);
+                        end
+                    end
                     activeParamedics = ones(1,numberOfBills)-injured;
                     for j=1:length(activeParamedics)
                         if (j~=i && activeParamedics(j))
@@ -302,6 +307,9 @@ if (clientID>-1)
                 if( saviors(i) ~= 0 )
                     if( abs(positions(i,1) - positions(saviors(i),1)) < 2 && abs(positions(i,2) - positions(saviors(i),2)) < 2)
                         stay(i) = 1;
+                        for j=1:4
+                            vrep.simxSetJointPosition(clientID,joints(i,j),0,vrep.simx_opmode_oneshot);
+                        end
                     end
                     orient2 = setOrientationFromPosition(positions(saviors(i),1) - positions(i,1), positions(saviors(i),2)- positions(i,2));
                     [dx(i),dy(i)] = setPositionFromOrientation(orient2,sqrt((v^2)*2));
@@ -367,7 +375,7 @@ if (clientID>-1)
             vrep.simxSetJointPosition(clientID,joints(i,j),0,vrep.simx_opmode_oneshot);
         end
     end
-    
+    pause(2);
     vrep.simxFinish(-1);
 else
     disp('Próba po³¹czenia ze œrodowiskiem V-rep nie powiod³a siê.');
