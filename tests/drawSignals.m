@@ -37,6 +37,7 @@ xlim([xMin-10 xMax+10]);
 ylim([yMin-10 yMax+10]);
 
 title('Trasa syga³u SOS od potrzebuj¹cego do lidera z uwzglêdnieniem zasiêgu');
+daspect([1 1 1])
 
 h = zeros(2, 1);
 h(1) = plot(NaN,NaN,'.r','MarkerSize',10, 'visible', 'on');

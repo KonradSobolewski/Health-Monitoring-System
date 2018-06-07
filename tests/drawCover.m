@@ -90,6 +90,7 @@ plot(positions(savior2,1),positions(savior2,2),'.r','MarkerSize',10);
 text(positions(savior2,1)+1,positions(savior2,2)+1,num2str(savior2),'Color','k');
 
 title('Pokrycie terenu przez pozosta³ych ratowników');
+daspect([1 1 1])
 
 h = zeros(3, 1);
 h(1) = plot(NaN,NaN,'.k','MarkerSize',10, 'visible', 'on');
