@@ -6,6 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clear all;
+close all;
 vrep=remApi('remoteApi'); % using the prototype file (remoteApiProto.m)
 vrep.simxFinish(-1); % just in case, close all opened connections
 
@@ -65,6 +66,7 @@ if (clientID>-1)
     
     % Inicjalizacja sygna³ów - wiadomoœci
     signalSpeed = 0.1;
+    signalRange = 50;
     r = zeros(1,numberOfBills);
     
     % Wymiary mapy w œrodowisku V-rep
@@ -90,8 +92,7 @@ if (clientID>-1)
     inneed = 0;
     flag = 1;
     time = 0;
-    inRange = zeros(1,numberOfBills);
-    saviors = zeros(1,numberOfBills); 
+    saviors = zeros(1,numberOfBills);
     bad = zeros(1,numberOfBills);
     sentCounter = zeros(1,numberOfBills);
     receivedCounter = zeros(1,numberOfBills);
@@ -100,6 +101,10 @@ if (clientID>-1)
     sentMessages = cell(10,8,numberOfBills);
     receivedMessages = cell(20,6,numberOfBills);
     helpStatus = 0;
+    awaitingPartial = zeros(numberOfBills);
+    inRange = zeros(numberOfBills);
+    routingTable = zeros(numberOfBills);
+    whoSent = 0;
     
     fprintf('\n');
     disp('<strong>Symulacja rozpoczêta.</strong>');
@@ -119,7 +124,7 @@ if (clientID>-1)
         tic
         time = time +1;
         if (mod(time,5) == 0)
-            if k ~= 21 
+            if k ~= 21
                 k = k+1;
             else
                 k = 1;
@@ -139,24 +144,43 @@ if (clientID>-1)
                     leader = find(hierarchy==1);
                 end
                 if bad(i)==2
-                        info = 'SOS_kryt';
-                    else
-                        info = 'SOS';
+                    info = 'SOS_kryt';
+                else
+                    info = 'SOS';
                 end
                 if fullNet
                     flyTime = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
                     fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
                     sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
                     sentCounter(i) = sentCounter(i)+1;
-                else
-                    d = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
-                    if d<signalRange
-                        flyTime = d;
-                        fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
+                else %czêœciowa siatka
+                    for j=1:numberOfBills
+                        for l=1:numberOfBills
+                            d = sqrt((positions(l,1) - positions(j,1))^2 + (positions(l,2) - positions(j,2))^2);
+                            if (d<signalRange && l~=j)
+                                inRange(j,l) = d;
+                            else
+                                inRange(j,l) = 0;
+                            end
+                        end
+                    end
+                    %                     d = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
+                    if inRange(i,leader)
+                        flyTime = inRange(i,leader);
                         sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
                         sentCounter(i) = sentCounter(i)+1;
+                        awaitingPartial(leader,i) = sentCounter(i);
                     else
-                        %todo
+                        
+%                         for j=1:numberOFBills
+%                             if (j~=i && inRange(i,j))
+%                                 flyTime = inRange(i,j);
+%                                 sentMessages(sentCounter(i)+1,:,i) = fillPartialMessage(i,sentCounter(i),leader,info,positions(i,1:2),find(inRage(i,:)~=0),flyTime);
+%                                 sentCounter(i) = sentCounter(i)+1;
+%                                 awaitingPartial(j,i) = sentCounter(i);
+%                             end
+%                         end
+                        
                     end
                 end
                 fprintf('\n');
@@ -165,7 +189,7 @@ if (clientID>-1)
                 disp(name);
                 vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[0 -pi/2 0],vrep.simx_opmode_oneshot);
                 vrep.simxSetObjectPosition(clientID,paramedic(i),-1,[positions(i,1),positions(i,2),0.1],vrep.simx_opmode_oneshot);
-             elseif( bad(i)>0 && injured(i)==0 && sum(injured)>=1)
+            elseif( bad(i)>0 && injured(i)==0 && sum(injured)>=1)
                 temp(i) = 36.6;
                 sys_press(i) = 120;
                 dias_press(i) = 80;

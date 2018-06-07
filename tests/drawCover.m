@@ -45,10 +45,10 @@ end
 
 for i=1:length(active)
     if i==1
-        x = [corner(i,1,1),corner(i,2,1),corner(i,3,1),corner(i,4,1)];
-        y = [corner(i,1,2),corner(i,2,2),corner(i,3,2),corner(i,4,2)];
+        [x,y] = poly2cw([corner(i,1,1),corner(i,2,1),corner(i,3,1),corner(i,4,1)],[corner(i,1,2),corner(i,2,2),corner(i,3,2),corner(i,4,2)]);
     else
-        [x,y] = polybool('union',x,y,[corner(i,1,1),corner(i,2,1),corner(i,3,1),corner(i,4,1)],[corner(i,1,2),corner(i,2,2),corner(i,3,2),corner(i,4,2)]);
+        [x1,y1] = poly2cw([corner(i,1,1),corner(i,2,1),corner(i,3,1),corner(i,4,1)],[corner(i,1,2),corner(i,2,2),corner(i,3,2),corner(i,4,2)]);
+        [x,y] = polybool('union',x,y,x1,y1);
     end
 end
 
