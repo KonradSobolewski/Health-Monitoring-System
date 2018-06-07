@@ -1,4 +1,4 @@
-function [saviors] = choseParamedics(positions,inneed,injured)
+function [saviors] = choseParamedics(positions,inneed,injured,dx,dy)
 
 numOfParamedics = length(positions);
 optionsMatrix = ones(numOfParamedics);
@@ -18,11 +18,11 @@ for  i=1:length(row)
     savior1 = row(i);
     savior2 = col(i);
 
-    outcomesMatrix(savior1,savior2)= J(savior1,savior2,positions,inneed,injured);
+    outcomesMatrix(savior1,savior2)= J(savior1,savior2,positions,inneed,injured,dx,dy);
 end
-
 [bestRow,bestCol] = find(outcomesMatrix==min(outcomesMatrix(outcomesMatrix>0)));
 saviors = zeros(numOfParamedics,1);
 saviors(bestRow(1))=1;
 saviors(bestCol(1))=1;
+drawCover(bestRow(1),bestCol(1),positions,inneed,injured,dx,dy);
 end

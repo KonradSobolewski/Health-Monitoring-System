@@ -1,4 +1,10 @@
-function [outcome] = J(savior1,savior2,positions,inneed,injured,dx,dy)
+function [] = drawCover(savior1,savior2,positions,inneed,injured,dx,dy)
+
+% Wymiary mapy
+xMax = 62.5;
+xMin = -17;
+yMax = 38.5;
+yMin = - 40;
 
 % Wspó³czynniki
 alfa1 = 0.5;
@@ -55,10 +61,39 @@ for i=1:counter
     actualCover = actualCover + polyarea(x(breakPoints(i)+1:breakPoints(i+1)-1),y(breakPoints(i)+1:breakPoints(i+1)-1));
 end
 
-d1 = sqrt((positions(inneed,1) - positions(savior1,1))^2 + (positions(inneed,2) - positions(savior1,2))^2);
-d2 = sqrt((positions(inneed,1) - positions(savior1,1))^2 + (positions(inneed,2) - positions(savior1,2))^2);
+% actualCover
+% maxCover
 
-%Wynik
-outcome = alfa1*((d1+d2)/2)+alfa2*(1-actualCover/maxCover);
+figure;
+plot(x,y);
+grid on;
+xlim([xMin-10 xMax+10]);
+ylim([yMin-10 yMax+10]);
 
+[f, v] = poly2fv(x,y);
+patch('Faces',f,'Vertices',v,'FaceColor','g','EdgeColor','none');
+hold on
+for i=1:length(active)
+    plot(positions(active(i),1),positions(active(i),2),'.k','MarkerSize',10);
+    text(positions(active(i),1)+1,positions(active(i),2),num2str(active(i)),'Color','k');
+end
+
+plot([positions(savior1,1),positions(inneed,1)],[positions(savior1,2),positions(inneed,2)],'r');
+plot([positions(savior2,1),positions(inneed,1)],[positions(savior2,2),positions(inneed,2)],'r');
+
+plot(positions(inneed,1),positions(inneed,2),'.b','MarkerSize',15);
+text(positions(inneed,1)+1,positions(inneed,2)+1,num2str(inneed),'Color','k');
+
+plot(positions(savior1,1),positions(savior1,2),'.r','MarkerSize',10);
+text(positions(savior1,1)+1,positions(savior1,2)+1,num2str(savior1),'Color','k');
+plot(positions(savior2,1),positions(savior2,2),'.r','MarkerSize',10);
+text(positions(savior2,1)+1,positions(savior2,2)+1,num2str(savior2),'Color','k');
+
+title('Pokrycie terenu przez pozosta³ych ratowników');
+
+h = zeros(3, 1);
+h(1) = plot(NaN,NaN,'.k','MarkerSize',10, 'visible', 'on');
+h(2) = plot(NaN,NaN,'.r','MarkerSize',10, 'visible', 'on');
+h(3) = plot(NaN,NaN,'.b','MarkerSize',15, 'visible', 'on');
+legend(h, 'szukaj¹cy poszkodowanego','id¹cy do kolegi','potrzebuj¹cy kolega','Location','best');
 end

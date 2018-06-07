@@ -22,10 +22,12 @@ if (clientID>-1)
     hierarchy = randperm(length(paramedic));            % hierarchia wœród ratowników
     leader = find(hierarchy==1);                        % wybór lidera
     
-    %Poszkodowany - poszukiwany przez ratowników
+    % Poszkodowany - poszukiwany przez ratowników
     [~,saveMe]=vrep.simxGetObjectHandle(clientID,'Poszkodowany',vrep.simx_opmode_blocking);
+    [~,saveMePosition] = vrep.simxGetObjectPosition(clientID,saveMe,-1,vrep.simx_opmode_blocking);
+    vrep.simxSetObjectPosition(clientID,saveMe,-1,[saveMePosition(1:2)*(0.2*rand(1)+0.9),saveMePosition(3)],vrep.simx_opmode_oneshot);
     
-    %Jointy ratowników - w celu poruszania koñczynami
+    % Jointy ratowników - w celu poruszania koñczynami
     joints = zeros(size(paramedic,2),4); % alokuje macierz na jointy 2x4
     for i=1:size(paramedic,2)
         joints(i,:) = getJoints(i,clientID,vrep); % pobieram jointy ka¿dego ratownika
@@ -41,10 +43,10 @@ if (clientID>-1)
         positions(i,:) = position;
     end
     
-    %Inicjalizacja jointów
+    % Inicjalizacja jointów
     posOfJoints = getPosOfJoints(1);
     
-    %Inicjalizacja czujników ratowników - temperatura cia³a, ciœnienie, puls
+    % Inicjalizacja czujników ratowników - temperatura cia³a, ciœnienie, puls
     temp = ones(1,numberOfBills)*36.6;
     sys_press = ones(1,numberOfBills)*120;
     dias_press = ones(1,numberOfBills)*80;
@@ -53,7 +55,7 @@ if (clientID>-1)
     prev_dias_press = ones(6000,numberOfBills)*80;
     prev_puls = ones(6000,numberOfBills)*75;
     
-    %Inicjalizacja zmiennych niezbêdnych do realizacji ruchu ratowników
+    % Inicjalizacja zmiennych niezbêdnych do realizacji ruchu ratowników
     k=0;
     dx= zeros(1,numberOfBills);
     dy= zeros(1,numberOfBills);
@@ -61,18 +63,17 @@ if (clientID>-1)
     beforAvoid = zeros(numberOfBills,2); %old dx old dy
     avoidStart = zeros(numberOfBills,2);
     
-    %Inicjalizacja sygna³ów - wiadomoœci
-    signals = zeros(numberOfBills,numberOfBills); % % od kogo do kogo
+    % Inicjalizacja sygna³ów - wiadomoœci
     signalSpeed = 0.1;
     r = zeros(1,numberOfBills);
     
-    %Wymiary mapy w œrodowisku V-rep
+    % Wymiary mapy w œrodowisku V-rep
     xMax = 62.5;
     xMin = -17;
     yMax = 38.5;
     yMin = - 40;
     
-    %Prêdkoœæ i ustalenie pocz¹tkowych kierunków
+    % Prêdkoœæ i ustalenie pocz¹tkowych kierunków
     v = (0.009-0.006)*rand(numberOfBills,1)+0.006;
     for i=1:numberOfBills
         if wayOfWalking == 1
@@ -83,14 +84,14 @@ if (clientID>-1)
         end
     end
     
-    %Inicjalizacja wektorów i zmiennych pomocniczych
+    % Inicjalizacja wektorów i zmiennych pomocniczych
     injured = zeros(1,numberOfBills);
     stay = zeros(1,numberOfBills);
     inneed = 0;
     flag = 1;
     time = 0;
     inRange = zeros(1,numberOfBills);
-    saviors = zeros(1,numberOfBills); %kto kogo ratuje
+    saviors = zeros(1,numberOfBills); 
     bad = zeros(1,numberOfBills);
     sentCounter = zeros(1,numberOfBills);
     receivedCounter = zeros(1,numberOfBills);
@@ -118,7 +119,7 @@ if (clientID>-1)
         tic
         time = time +1;
         if (mod(time,5) == 0)
-            if k ~= 21 % size of position arrays
+            if k ~= 21 
                 k = k+1;
             else
                 k = 1;
@@ -126,9 +127,9 @@ if (clientID>-1)
             posOfJoints = getPosOfJoints(k);
         end
         
-        % w tej pêtli for iterujemy po wszystkich ratownikach
+        % W tej pêtli for iterujemy po wszystkich ratownikach
         for i=1:numberOfBills
-            % tutaj sprawdzamy odczyty i okreœlamy rodzaj SOS: 0-brak, 1-SOS, 2-SOS krytyczne
+            % Tutaj sprawdzamy odczyty i okreœlamy rodzaj SOS: 0-brak, 1-SOS, 2-SOS krytyczne
             bad(i) = sosSignalGenerator(temp(i),puls(i),sys_press(i),dias_press(:,i),prev_puls(:,i),prev_sys_press(:,i),prev_dias_press(:,i));
             if( bad(i)>0 && inneed==0 && sum(injured)<1)
                 injured(i) = 1;
@@ -137,23 +138,26 @@ if (clientID>-1)
                     hierarchy = hierarchy-1;
                     leader = find(hierarchy==1);
                 end
-                if fullNet
-                    if bad(i)==2
+                if bad(i)==2
                         info = 'SOS_kryt';
                     else
                         info = 'SOS';
-                    end
+                end
+                if fullNet
                     flyTime = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
-                    fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime)
+                    fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
                     sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
                     sentCounter(i) = sentCounter(i)+1;
                 else
-                    %                r(i) = r(i) + signalSpeed;
-                    %                d = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
-                    %                if( d < r(i) && inRange(i) == 0 )
-                    %                    inRange(i) = 1;
-                    %                    pause(3);
-                    %                end
+                    d = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
+                    if d<signalRange
+                        flyTime = d;
+                        fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
+                        sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
+                        sentCounter(i) = sentCounter(i)+1;
+                    else
+                        %todo
+                    end
                 end
                 fprintf('\n');
                 disp('<strong>Uwaga! Wys³ano sygna³ SOS.</strong>');
@@ -168,32 +172,23 @@ if (clientID>-1)
                 puls(i) = 75;
             end
             
-            % jeœli jakiœ ratownik wys³a³ sygna³ SOS - rozpoczynamy procedurê reagowania na sygna³ SOS
+            % Jeœli jakiœ ratownik wys³a³ sygna³ SOS - procedura reagowania na sygna³ SOS
             if(inneed)
                 if  fullNet
                     fullNetCommunication
                 else
                     partialNetCommunication
                 end
-                %                 pause(5);
-                %                 disp('-> Ratownicy odsy³aj¹ do lidera informacje o swoim po³o¿eniu.');
-                %                 pause(5);
-                %                 saviors = choseParamedics(positions,inneed,injured);
-                %                 saviors = saviors*inneed;
-                %                 disp('-> Lider wysy³a do ratowników swoj¹ decyzjê.');
-                %                 pause(30);
-                %                 inneed = 0;
-                
             end
             
             if(stay(i)==1 || injured(i)==1)
                 continue;
             else
-                for j=1:4 %zmieniam pozycje nóg
+                for j=1:4 % Zmiana pozycji nóg
                     vrep.simxSetJointPosition(clientID,joints(i,j),posOfJoints(j),vrep.simx_opmode_streaming);
                 end
                 
-                %Sprawdzanie czy poszkodowany albo inny element znajduje siê w polu widzenia, manewr omijania przeszkody
+                % Sprawdzanie czy poszkodowany albo inny element znajduje siê w polu widzenia, manewr omijania przeszkody
                 [~,detectionState,detectionPoint,detectedObject,~]= vrep.simxReadProximitySensor(clientID,bills_sensor(i),vrep.simx_opmode_streaming);
                 if(detectionState)
                     if( detectionPoint(1) < 0.5 && detectionPoint(1) > 0 && detectionPoint(3) < 1.5 && avoid(i)==0) % skrêt w prawo
@@ -219,19 +214,20 @@ if (clientID>-1)
                     end
                 end
                 
-                % chodzenie w kierunku ratownika potrzebuj¹cego pomocy
+                % Chodzenie w kierunku ratownika potrzebuj¹cego pomocy
                 if( saviors(i) ~= 0 )
                     if( abs(positions(i,1) - positions(saviors(i),1)) < 2 && abs(positions(i,2) - positions(saviors(i),2)) < 2)
                         stay(i) = 1;
                         for j=1:4
                             vrep.simxSetJointPosition(clientID,joints(i,j),0,vrep.simx_opmode_oneshot);
                         end
+                        disp(['<strong>Ratownik nr ',num2str(i),' dotar³ do poszkodowanego kolegi.</strong>']);
                     end
                     orient2 = setOrientationFromPosition(positions(saviors(i),1) - positions(i,1), positions(saviors(i),2)- positions(i,2));
                     [dx(i),dy(i)] = setPositionFromOrientation(orient2,sqrt((v(i)^2)*2));
                 end
                 
-                %predykcja nastêpnego po³o¿enia w normalnym przypadku
+                % Predykcja nastêpnego po³o¿enia w normalnym przypadku
                 if avoid(i) == 0
                     if(saviors(i) == 0 )
                         if positions(i,1) > xMax - abs(dx(i)) && positions(i,1) < xMax + abs(dx(i)) && dx(i)>0
@@ -251,15 +247,23 @@ if (clientID>-1)
                 end
                 
                 % Ruch ratowników
-                positions(i,1)=positions(i,1)+dx(i);
-                positions(i,2)=positions(i,2)+dy(i);
+                if mod(time,550)==0
+                    if rand(1)>0.5
+                        positions(i,1)=positions(i,1)+dx(i)*((1.1-0.9)*rand(1)+0.9);
+                    else
+                        positions(i,2)=positions(i,2)+dy(i)*((1.1-0.9)*rand(1)+0.9);
+                    end
+                else
+                    positions(i,1)=positions(i,1)+dx(i);
+                    positions(i,2)=positions(i,2)+dy(i);
+                end
                 vrep.simxSetObjectPosition(clientID,paramedic(i),-1,[positions(i,1),positions(i,2),positions(i,3)],vrep.simx_opmode_oneshot);
                 orient = setOrientationFromPosition(dx(i),dy(i));
                 vrep.simxSetObjectOrientation(clientID,paramedic(i),-1,[0 0 orient],vrep.simx_opmode_oneshot);
             end
         end
         
-        % raz na 1000 iteracji jeden losowy ratownik cudownie zdrowieje
+        % Raz na 1000 iteracji jeden losowy ratownik cudownie zdrowieje
         if(mod(time,1000)==0 )
             lucky_guy = randi(numberOfBills,1);
             if(~injured(lucky_guy))
@@ -270,7 +274,7 @@ if (clientID>-1)
             end
         end
         
-        % 'losowe' zmienianie wartoœci odczytów z czujników ratowników
+        % 'Losowe' zmienianie wartoœci odczytów z czujników ratowników
         if (mod(time,30) == 0)
             temp = temp + rand(1,numberOfBills)/4 - 0.125;
             sys_press = sys_press + rand(1,numberOfBills)*2 - 1;
