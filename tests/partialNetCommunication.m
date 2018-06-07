@@ -1,42 +1,26 @@
 %% Komunikacja w niepe³nej siatce - uwzglêdnienie zasiêgu
 
-if (helpStatus==0)
-    if (awaitingPartial(i,inneed) && (i==leader || i==inneed))
-        if (sentMessages{sentCounter(inneed),7,inneed}>=signalSpeed && i==inneed)
-            sentMessages{sentCounter(inneed),7,inneed} = sentMessages{sentCounter(inneed),7,inneed}-signalSpeed;
-        elseif (sentMessages{sentCounter(inneed),7,inneed}<signalSpeed && i==leader)
-            helpStatus=1;
-            awaitingPartial(i,inneed)=0;
-            sentMessages{sentCounter(inneed),8,inneed} = 1;
-            receivedMessages(receivedCounter(leader)+1,:,leader) = sentMessages(sentCounter(inneed),1:6,i);
-            receivedCounter(leader) = receivedCounter(leader)+1;
-            disp('-> Lider odebra³ sygna³ SOS.');
-        end
-    elseif sum(awaitingPartial(i,:))
+
+if (helpStatus==0 && (i==inneed||i==leader))
+    if (sentMessages{sentCounter(inneed),7,inneed}>=signalSpeed && i==inneed)
+        sentMessages{sentCounter(inneed),7,inneed} = sentMessages{sentCounter(inneed),7,inneed}-signalSpeed;
+    elseif (sentMessages{sentCounter(inneed),7,inneed}<signalSpeed && i==leader)
+        helpStatus=1;
+        sentMessages{sentCounter(inneed),8,inneed} = 1;
+        receivedMessages(receivedCounter(leader)+1,:,leader) = sentMessages(sentCounter(inneed),1:6,i);
+        receivedCounter(leader) = receivedCounter(leader)+1;
+        disp('-> Lider odebra³ sygna³ SOS.');
         for j=1:numberOfBills
-            d = sqrt((positions(i,1) - positions(j,1))^2 + (positions(i,2) - positions(j,2))^2);
-            if (d<signalRange && j~=i)
-                inRange(i,j) = d;
-            else
-                inRange(i,j) = 0;
-            end
-        end
-        if inRange(i,leader)
-            flyTime = inRange(i,leader);
-            sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
-            sentCounter(i) = sentCounter(i)+1;
-            awaitingPartial(leader,1) = sentCounter(i);
-        else
-            for j=1:numberOFBills
-                if (j~=i && inRange(i,j))
-                    flyTime = inRange(i,j);
-                    sentMessages(sentCounter(i)+1,:,i) = fillPartialMessage(i,sentCounter(i),leader,info,positions(i,1:2),find(inRage(i,:)~=0),flyTime);
-                    sentCounter(i) = sentCounter(i)+1;
-                    awaitingPartial(j,1) = sentCounter(i);
+            for l=1:numberOfBills
+                d = sqrt((positions(l,1) - positions(j,1))^2 + (positions(l,2) - positions(j,2))^2);
+                if (d<signalRange && l~=j)
+                    inRange(j,l) = d;
+                else
+                    inRange(j,l) = 0;
                 end
             end
-            
         end
+        tempTable = sparse(inRange);
     end
 end
 
@@ -50,8 +34,8 @@ if (helpStatus==1 && i==leader)
     activeParamedics = ones(1,numberOfBills)-injured;
     for j=1:length(activeParamedics)
         if (j~=i && activeParamedics(j))
-            flyTime = sqrt((positions(leader,1) - positions(j,1))^2 + (positions(leader,2) - positions(j,2))^2);
-            sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),j,'podaj_pozycje',[],flyTime);
+            [flyTime,signalRoute,~] = graphshortestpath(tempTable,leader,j);                        
+            sentMessages(sentCounter(i)+1,:,i) = fillPartialMessage(i,sentCounter(i),j,'podaj_pozycje',[],j,flyTime);
             awaitingMessage(j) = sentCounter(i)+1;
             sentCounter(i) = sentCounter(i)+1;
         end
@@ -68,7 +52,7 @@ if (helpStatus==2 && awaitingMessage(i))
         receivedCounter(i) = receivedCounter(i)+1;
         awaitingMessage(i) = 0;
         disp(['-> Ratownik nr ',num2str(i),' odebra³ wiadomoœæ od lidera.']);
-        flyTime = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
+        [flyTime,~,~] = graphshortestpath(tempTable,leader,i);
         sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),j,'pozycja',positions(i,1:2),flyTime);
         sentCounter(i) = sentCounter(i)+1;
         messageForLeader(i) = sentCounter(i);
@@ -98,7 +82,7 @@ if (helpStatus==3 && i==leader)
     saviors = saviors*inneed;
     for j=1:length(activeParamedics)
         if (j~=i && activeParamedics(j))
-            flyTime = sqrt((positions(leader,1) - positions(j,1))^2 + (positions(leader,2) - positions(j,2))^2);
+            [flyTime,~,~] = graphshortestpath(tempTable,leader,j);
             if saviors(j)
                 sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),j,'idz',positions(inneed,1:2),flyTime);
             else

@@ -12,7 +12,7 @@ vrep.simxFinish(-1); % just in case, close all opened connections
 
 clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
 wayOfWalking = 1;  % 1-promieniœcie 2-równolegle
-fullNet = 1; % 1-pe³na siatka, 0-niepe³na siatka
+fullNet = 0; % 1-pe³na siatka, 0-niepe³na siatka
 numberOfBills = 8; % zmianiam liczbe Billów
 
 clc
@@ -66,7 +66,7 @@ if (clientID>-1)
     
     % Inicjalizacja sygna³ów - wiadomoœci
     signalSpeed = 0.1;
-    signalRange = 50;
+    signalRange = 30;
     r = zeros(1,numberOfBills);
     
     % Wymiary mapy w œrodowisku V-rep
@@ -164,24 +164,12 @@ if (clientID>-1)
                             end
                         end
                     end
-                    %                     d = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
-                    if inRange(i,leader)
-                        flyTime = inRange(i,leader);
-                        sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
-                        sentCounter(i) = sentCounter(i)+1;
-                        awaitingPartial(leader,i) = sentCounter(i);
-                    else
-                        
-%                         for j=1:numberOFBills
-%                             if (j~=i && inRange(i,j))
-%                                 flyTime = inRange(i,j);
-%                                 sentMessages(sentCounter(i)+1,:,i) = fillPartialMessage(i,sentCounter(i),leader,info,positions(i,1:2),find(inRage(i,:)~=0),flyTime);
-%                                 sentCounter(i) = sentCounter(i)+1;
-%                                 awaitingPartial(j,i) = sentCounter(i);
-%                             end
-%                         end
-                        
-                    end
+                    
+                    tempTable = sparse(inRange);
+                    [flyTime,signalRoute,~] = graphshortestpath(tempTable,inneed,leader);
+                    sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
+                    sentCounter(i) = sentCounter(i)+1;
+                    drawSignals(positions,signalRoute,signalRange,inneed,leader);
                 end
                 fprintf('\n');
                 disp('<strong>Uwaga! Wys³ano sygna³ SOS.</strong>');
