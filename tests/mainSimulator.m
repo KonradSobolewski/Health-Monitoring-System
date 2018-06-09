@@ -11,7 +11,7 @@ vrep=remApi('remoteApi'); % using the prototype file (remoteApiProto.m)
 vrep.simxFinish(-1); % just in case, close all opened connections
 
 clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
-wayOfWalking = 1;  % 1-promieniœcie 2-równolegle
+wayOfWalking = 2;  % 1-promieniœcie 2-równolegle
 fullNet = 0; % 1-pe³na siatka, 0-niepe³na siatka
 numberOfBills = 8; % zmianiam liczbe Billów
 
@@ -120,6 +120,7 @@ if (clientID>-1)
     end
     fprintf('\n');
     %% Pêtla while - pêtla w³aœciwa symulacji
+    czascalosci = tic
     while flag
         tic
         time = time +1;
@@ -193,7 +194,7 @@ if (clientID>-1)
                 end
             end
             
-            if(stay(i)==1 || injured(i)==1)
+            if(stay(i)==1 || injured(i)==1 )
                 continue;
             else
                 for j=1:4 % Zmiana pozycji nóg
@@ -202,13 +203,13 @@ if (clientID>-1)
                 
                 % Sprawdzanie czy poszkodowany albo inny element znajduje siê w polu widzenia, manewr omijania przeszkody
                 [~,detectionState,detectionPoint,detectedObject,~]= vrep.simxReadProximitySensor(clientID,bills_sensor(i),vrep.simx_opmode_streaming);
-                if(detectionState)
-                    if( detectionPoint(1) < 0.5 && detectionPoint(1) > 0 && detectionPoint(3) < 1.5 && avoid(i)==0) % skrêt w prawo
+                if(detectionState && avoid(i) == 0)
+                    if( detectionPoint(1) < 0.4 && detectionPoint(1) > 0 && detectionPoint(3) < 1.5 && detectionPoint(3)>0 && avoid(i)==0) % skrêt w prawo
                         avoid(i) = 1;
                         beforAvoid(i,1) = dx(i);
                         beforAvoid(i,2) = dy(i);
                         avoidStart(i) = time;
-                    elseif ( detectionPoint(1) > -0.5 && detectionPoint(1) < 0 && detectionPoint(3) < 1.5 && avoid(i)==0) % skrêt w lewo
+                    elseif ( detectionPoint(1) > -0.4 && detectionPoint(1) < 0 && detectionPoint(3)>0 && detectionPoint(3) < 1.5 && avoid(i)==0) % skrêt w lewo
                         avoid(i) = 2;
                         beforAvoid(i,1) = dx(i);
                         beforAvoid(i,2) = dy(i);
@@ -301,6 +302,7 @@ if (clientID>-1)
             pause(0.01-toc);
         end
     end
+    toc(czascalosci)
     % Zakoñczenie symulacji - ustawienie ratowników w pozycjach stoj¹cych
     for i=1:size(paramedic,2)
         for j=1:4
