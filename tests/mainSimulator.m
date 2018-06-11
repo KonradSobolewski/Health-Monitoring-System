@@ -32,8 +32,11 @@ if (clientID>-1)
     
     % Jointy ratowników - w celu poruszania koñczynami
     joints = zeros(size(paramedic,2),4); % alokuje macierz na jointy 2x4
+    planes = zeros(1,size(paramedic,2));
     for i=1:size(paramedic,2)
         joints(i,:) = getJoints(i,clientID,vrep); % pobieram jointy ka¿dego ratownika
+        fullname = strcat('Plane',num2str(i));
+        [~, planes(i)] = vrep.simxGetObjectHandle(clientID,fullname,vrep.simx_opmode_blocking);
     end
     
     % Inicjalizacja pola widzenia - sensora w V-rep
@@ -123,7 +126,7 @@ if (clientID>-1)
     end
     fprintf('\n');
     %% Pêtla while - pêtla w³aœciwa symulacji
-    czascalosci = tic
+    czascalosci = tic;
     while flag
         tic
         time = time +1;
@@ -142,6 +145,7 @@ if (clientID>-1)
             bad(i) = sosSignalGenerator(temp(i),puls(i),sys_press(i),dias_press(:,i),prev_puls(:,i),prev_sys_press(:,i),prev_dias_press(:,i));
             if( bad(i)>0 && inneed==0 && sum(injured)<1)
                 injured(i) = 1;
+				vrep.simxSetObjectPosition(clientID,planes(i),-1,[0 0 -3],vrep.simx_opmode_oneshot);
                 inneed = i;
                 if i==leader
                     hierarchy = hierarchy-1;
