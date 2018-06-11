@@ -3,12 +3,14 @@
 %  Symulator akcji ratowniczej z wykorzystaniem œrodowiska V-rep    %
 %  Jakub Pankiewicz, Konrad Sobolewski, Kinga Staszkiewicz          %
 %  Warszawa 2018                                                    %
+%                                                                   %
+%  Przed uruchomieniem skryptu nale¿y w³¹czyæ symulacjê w V-repie!  % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clear all;
 close all;
-vrep=remApi('remoteApi'); % using the prototype file (remoteApiProto.m)
-vrep.simxFinish(-1); % just in case, close all opened connections
+vrep=remApi('remoteApi'); % wykorzystanie pliku (remoteApiProto.m)
+vrep.simxFinish(-1); % zamkniêcie otwartych po³¹czeñ
 
 clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
 wayOfWalking = 2;  % 1-promieniœcie 2-równolegle
@@ -19,7 +21,7 @@ clc
 if (clientID>-1)
     disp('<strong>Po³¹czenie ze œrodowiskiem V-rep udane.</strong>');
     disp('Trwa inicjalizacja systemu...');
-    paramedic = getRats(numberOfBills,clientID,vrep);   % tworzê 8 ratowników
+    paramedic = getRats(numberOfBills,clientID,vrep);   % tworzenie 8 ratowników
     hierarchy = randperm(length(paramedic));            % hierarchia wœród ratowników
     leader = find(hierarchy==1);                        % wybór lidera
     
@@ -105,6 +107,7 @@ if (clientID>-1)
     inRange = zeros(numberOfBills);
     routingTable = zeros(numberOfBills);
     whoSent = 0;
+    signalSOS = '';
     
     fprintf('\n');
     disp('<strong>Symulacja rozpoczêta.</strong>');
@@ -145,14 +148,14 @@ if (clientID>-1)
                     leader = find(hierarchy==1);
                 end
                 if bad(i)==2
-                    info = 'SOS_kryt';
+                    signalSOS = 'SOS_kryt';
                 else
-                    info = 'SOS';
+                    signalSOS = 'SOS';
                 end
                 if fullNet
                     flyTime = sqrt((positions(leader,1) - positions(i,1))^2 + (positions(leader,2) - positions(i,2))^2);
-                    fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
-                    sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
+                    fillMessage(i,sentCounter(i),leader,signalSOS,positions(i,1:2),flyTime);
+                    sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,signalSOS,positions(i,1:2),flyTime);
                     sentCounter(i) = sentCounter(i)+1;
                 else %czêœciowa siatka
                     for j=1:numberOfBills
@@ -165,10 +168,9 @@ if (clientID>-1)
                             end
                         end
                     end
-                    
                     tempTable = sparse(inRange);
                     [flyTime,signalRoute,~] = graphshortestpath(tempTable,inneed,leader);
-                    sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,info,positions(i,1:2),flyTime);
+                    sentMessages(sentCounter(i)+1,:,i) = fillMessage(i,sentCounter(i),leader,signalSOS,positions(i,1:2),flyTime);
                     sentCounter(i) = sentCounter(i)+1;
                     drawSignals(positions,signalRoute,signalRange,inneed,leader);
                 end

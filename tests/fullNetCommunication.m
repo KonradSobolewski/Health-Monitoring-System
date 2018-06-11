@@ -9,6 +9,9 @@ if (helpStatus==0 && (i==inneed||i==leader))
         receivedMessages(receivedCounter(leader)+1,:,leader) = sentMessages(sentCounter(inneed),1:6,i);
         receivedCounter(leader) = receivedCounter(leader)+1;
         disp('-> Lider odebra³ sygna³ SOS.');
+        if strcmp('SOS_kryt',signalSOS)
+            disp('-> Lider u¿y³ telefonu satelitarnego, aby dodatkowo wezwaæ pomoc z zewn¹trz.');
+        end
     end
 end
 if (helpStatus==1 && i==leader)
